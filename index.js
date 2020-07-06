@@ -17,7 +17,7 @@ let users = [
 // build endpoints
 
 server.get("/api/users", (req, res) => {
-    if(users){ // does this work to see 'if there's an error in retrieving the _users_ from the database'?
+    if(users.length > 0){
     res.json(users); 
     } else {
         res.status(500).json({ errorMessage: "The users information could not be retrieved." })
@@ -48,8 +48,18 @@ server.post("/api/users", (req, res) => {
         const newUser = req.body; 
         newUser.id = shortid.generate(); 
         users.push(newUser); 
-        res.status(201).json(newUser); 
-        if(!res){ // what condition would show an error while saving the user? simple way to do this? 
+
+        var exists = users.map(user => {
+            if(newUser.id === user.id){
+                return true 
+            } else {
+                return false 
+            }
+        })
+
+        if(exists){
+            res.status(201).json(newUser); 
+        } else {
             res.status(500).json({ errorMessage: "There was an error while saving the user to the database"})
         }
     }
@@ -75,9 +85,9 @@ server.get("/api/users/:id", (req, res) => {
         res.status(201).json(selected)
     }
 
-    if(!res){ // ? 
-        res.status(500).json({ errorMessage: "The user information could not be retrieved."})
-    }
+    // if(!res){
+    //     res.status(500).json({ errorMessage: "The user information could not be retrieved."})
+    // }
 })
 
 // <!-- When the client makes a `DELETE` request to `/api/users/:id`: -->
@@ -100,11 +110,13 @@ server.delete("/api/users/:id", (req, res) => {
     } else {
         users = users.filter(user => user.id !== id)
         res.status(201).json(deleted);
+
+        if(users.includes(deleted) === true){
+            res.status(500).json({ errorMessage: "The user could not be removed"  })
+        }
     }
 
-    if(!res){ //?
-        res.status(500).json({ errorMessage: "The user could not be removed"  })
-    }
+  
 });
 
 // <!-- When the client makes a `PUT` request to `/api/users/:id`: -->
@@ -142,6 +154,10 @@ server.put("/api/users/:id", (req, res) => {
     } else {
         Object.assign(updated, changes);
         res.status(200).json(updated);
+    }
+
+    if(users.includes(updated) === false){
+        res.status(500).json({ errorMessage: "The user information could not be modified." })
     }
 
 })
